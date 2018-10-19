@@ -1,1 +1,3 @@
-# -git-
+# Herixth
+> All about computer science
+
