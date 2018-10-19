@@ -70,6 +70,22 @@ let $VIMRUNTIME="C:/Program Files/Git/usr/share/vim/vim81"
 
         set tags="C:/Program Files/Git/usr/share/vim/vim81/ctags58"
         set autochdir
+        map <C-F12> :!ctags -R --c++-kinds=+p --fields=+iaS --extra=+q --languages=c++ .<CR>
+        " OmniCppComplete
+        set nocp
+        let OmniCpp_NamespaceSearch = 1
+        let OmniCpp_GlobalScopeSearch = 1
+        let OmniCpp_ShowAccess = 1
+        let OmniCpp_ShowPrototypeInAbbr = 1 " 显示函数参数列表
+        let OmniCpp_MayCompleteDot = 1   " 输入 .  后自动补全
+        let OmniCpp_MayCompleteArrow = 1 " 输入 -> 后自动补全
+        let OmniCpp_MayCompleteScope = 1 " 输入 :: 后自动补全
+        let OmniCpp_DefaultNamespaces = ["std", "_GLIBCXX_STD"]
+        highlight Pmenu    guibg=darkgrey  guifg=black 
+        highlight PmenuSel guibg=lightgrey guifg=black
+        " 自动关闭补全窗口
+        au CursorMovedI,InsertLeave * if pumvisible() == 0|silent! pclose|endif
+        set completeopt=menuone,menu,longest
 " }}}
 
 " Format {{{
@@ -87,54 +103,109 @@ let $VIMRUNTIME="C:/Program Files/Git/usr/share/vim/vim81"
         set foldmethod=syntax
         " 启动 vim 时关闭折叠代码
         set nofoldenable
+        "自动补全
+        :inoremap ( ()<ESC>i
+        :inoremap ) <c-r>=ClosePair(')')<CR>
+        :inoremap { {}<ESC>i
+        :inoremap } <c-r>=ClosePair('}')<CR>
+        :inoremap [ []<ESC>i
+        :inoremap ] <c-r>=ClosePair(']')<CR>
+        :inoremap " ""<ESC>i
+        :inoremap ' ''<ESC>i
+        function! ClosePair(char)
+            if getline('.')[col('.') - 1] == a:char
+                return "\<Right>"
+            else
+                return a:char
+            endif
+        endfunction
+        ""定义函数SetTitle，自动插入文件头 
+        autocmd BufNewFile *.cpp,*.[ch],*.sh,*.java exec ":call SetTitle()" 
+        func SetTitle() 
+            "如果文件类型为.sh文件 
+            if &filetype == 'sh' 
+                call setline(1,"\#########################################################################") 
+                call append(line("."), "\# File Name: ".expand("%")) 
+                call append(line(".")+1, "\# Author: Herixth") 
+                call append(line(".")+2, "\# mail: Herixth@gmail.com") 
+                call append(line(".")+3, "\# Created Time: ".strftime("%c")) 
+                call append(line(".")+4, "\#########################################################################") 
+                call append(line(".")+5, "\#!/bin/bash") 
+                call append(line(".")+6, "") 
+            else 
+                call setline(1, "/*************************************************************************") 
+                call append(line("."), "    > File Name: ".expand("%")) 
+                call append(line(".")+1, "    > Author: Herixth") 
+                call append(line(".")+2, "    > Mail: herixth@gmail.com ") 
+                call append(line(".")+3, "    > Created Time: ".strftime("%c")) 
+                call append(line(".")+4, " ************************************************************************/") 
+                call append(line(".")+5, "")
+            endif
+            if &filetype == 'cpp'
+                call append(line(".")+6, "#include<iostream>")
+                call append(line(".")+7, "using namespace std;")
+                call append(line(".")+8, "")
+            endif
+            if &filetype == 'c'
+                call append(line(".")+6, "#include<stdio.h>")
+                call append(line(".")+7, "")
+            endif
+            "新建文件后，自动定位到文件末尾
+            autocmd BufNewFile * normal G
+        endfunc 
+" }}}
 
-        " 插入匹配括号
-        " inoremap ( ()<LEFT>
-        " inoremap [ []<LEFT>
-        " inoremap { {}<LEFT>
-        " inoremap " ""<LEFT>
-        " inoremap ' ''<LEFT>
-        "
-        " function! RemovePairs()
-        "     let s:line = getline(".")
-        "     let s:previous_char = s:line[col(".")-1]
-        "
-        "     if index(["(","[","{"],s:previous_char) != -1
-        "         let l:original_pos = getpos(".")
-        "         execute "normal %"
-        "         let l:new_pos = getpos(".")
-        "         " only right (
-        "         if l:original_pos == l:new_pos
-        "             execute "normal! a\<BS>"
-        "             return
-        "         end
-        "
-        "         let l:line2 = getline(".")
-        "         if len(l:line2) == col(".")
-        "             execute "normal! v%xa"
-        "         else
-        "             execute "normal! v%xi"
-        "         end
-        "     else
-        "         execute "normal! a\<BS>"
-        "     end
-        " endfunction
-        "
-        " function! RemoveNextDoubleChar(char)
-        "     let l:line = getline(".")
-        "     let l:next_char = l:line[col(".")]
-        "
-        "     if a:char == l:next_char
-        "         execute "normal! l"
-        "     else
-        "         execute "normal! i" . a:char . ""
-        "     end
-        " endfunction
-        "
-        " inoremap <BS> <ESC>:call RemovePairs()<CR>a
-        " inoremap ) <ESC>:call RemoveNextDoubleChar(')')<CR>a
-        " inoremap ] <ESC>:call RemoveNextDoubleChar(']')<CR>a
-        " inoremap } <ESC>:call RemoveNextDoubleChar('}')<CR>a
+" Functions {{{
+        " "定义CompileRun函数，用来调用进行编译和运行
+        func CompileRun()
+        exec "w"
+        "C程序
+        if &filetype == 'c'
+        exec "!gcc -Wl,-enable-auto-import % -g -o %<.exe"
+        "c++程序
+        elseif &filetype == 'cpp'
+        exec "!g++ -Wl,-enable-auto-import % -g -o %<.exe"
+        "Java程序
+        elseif &filetype == 'java'
+        exec "!javac %"
+        endif
+        endfunc
+        "结束定义CompileRun
+        "定义Run函数
+        func Run()
+        if &filetype == 'c' || &filetype == 'cpp'
+        exec "!./%<.exe"
+        elseif &filetype == 'java'
+        exec "!java %<"
+        endif
+        endfunc
+        func TRun()
+        if &filetype == 'c' || &filetype == 'cpp'
+        exec "!time ./%<.exe"
+        endif
+        endfunc
+        "定义Debug函数，用来调试程序
+        func Debug()
+        exec "w"
+        "C程序
+        if &filetype == 'c'
+        exec "!gcc % -g -o %<.exe"
+        exec "!gdb %<.exe"
+        elseif &filetype == 'cpp'
+        exec "!g++ % -g -o %<.exe"
+        exec "!gdb %<.exe"
+        "Java程序
+        elseif &filetype == 'java'
+        exec "!javac %"
+        exec "!jdb %<"
+        endif
+        endfunc
+        "结束定义Debug
+        "设置程序的运行和调试的快捷键F5和Ctrl-F5
+        map <F5> :call CompileRun()<CR>
+        map <F6> :call Run()<CR>
+        map <F7> :call TRun()<CR>
+        map <C-F5> :call Debug()<CR>
 " }}}
 
 " Key-map {{{
