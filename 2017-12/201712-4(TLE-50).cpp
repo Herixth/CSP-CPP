@@ -2,7 +2,6 @@
     > File Name: Path.cpp
     > Author: Herixth
     > Mail: herixth@gmail.com 
-    > Created Time: 2018年11月27日 15:57:45
  ************************************************************************/
 #include <iostream>
 #include <algorithm>
@@ -14,7 +13,6 @@ using namespace std;
 
 const int maxn = 501, maxm = 1e5 + 1;
 
-int cnt;
 
 struct Edge {
     int target;
@@ -31,7 +29,6 @@ struct Edge {
 
 struct Vertex {
     int num;
-    int father;
     bool in_sign;
     int dist;
     int dist_buff;
@@ -57,6 +54,8 @@ void readData() {
     }
 }
 
+
+
 void BFS() {
     queue<Vertex> Q;
     Q.push(Vertex());
@@ -65,10 +64,8 @@ void BFS() {
 
         vector<Edge>::iterator iter = adj_list[curr_ver.num].begin();
         for (; iter != adj_list[curr_ver.num].end(); iter ++) {
-            if (curr_ver.father == (*iter).target)
+            if (loc_value(curr_ver) && midValue[(*iter).target] < loc_value(curr_ver))
                 continue;
-            cnt++;
-
             // if ((*iter).vis) continue;
             Vertex next_ver;
             // make sign
@@ -98,19 +95,17 @@ void BFS() {
                     next_ver.dist += (*iter).dist;
                 }
             }
-            next_ver.father = curr_ver.num;
-            // next_ver.father.insert(curr_ver.num);
-            // for (set<int>::iterator iter = curr_ver.father.begin(); iter != curr_ver.father.end(); iter++)
-            // {
-            //     next_ver.father.insert(*iter);
-            // }
             if (next_ver.dist + pow(next_ver.dist_buff, 2) > ans)
                 continue;
             if (next_ver.num == N - 1) {
                 ans = min(ans, int(next_ver.dist + pow(next_ver.dist_buff, 2)));
             }
-            else
-                Q.push(next_ver);
+            else {
+                if (loc_value(next_ver) < ans) {
+                    Q.push(next_ver);
+                    midValue[next_ver.num] = loc_value(next_ver);
+                }
+            }
         }
     }
 }
